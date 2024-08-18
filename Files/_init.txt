@@ -1,0 +1,7 @@
+.open sponsorblock.db3
+PRAGMA synchronous=0;
+PRAGMA locking_mode=EXCLUSIVE;
+PRAGMA journal_mode=WAL;
+.print Resetting database...
+.read Files\_sponsorblock.tables.sql
+VACUUM;

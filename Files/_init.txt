@@ -1,7 +1,9 @@
 .open Temp\sponsorblock.temp.db3
+-- These speed up database creation at the risk of corrupting it during a crash
+-- This is not really a problem here because it's all just imported data
 PRAGMA synchronous=0;
 PRAGMA locking_mode=EXCLUSIVE;
+-- "MEMORY" would be faster, but you require about 16G or more of free ram
 PRAGMA journal_mode=WAL;
 .print Resetting database...
 .read Files\_sponsorblock.tables.sql
-VACUUM;

@@ -1,4 +1,3 @@
-.print Creating indexes...
-.read Files\_sponsorblock.indexes.sql
+PRAGMA journal_mode=WAL;
 VACUUM INTO 'DB\sponsorblock.db3';
 .quit

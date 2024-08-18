@@ -1,4 +1,4 @@
-.open sponsorblock.db3
+.open DB\sponsorblock.db3
 PRAGMA synchronous=0;
 PRAGMA locking_mode=EXCLUSIVE;
 PRAGMA journal_mode=WAL;

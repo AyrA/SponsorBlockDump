@@ -1,4 +1,4 @@
 .print Creating indexes...
 .read Files\_sponsorblock.indexes.sql
+VACUUM INTO 'DB\sponsorblock.db3';
 .quit
-

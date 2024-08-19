@@ -1,3 +1,5 @@
-PRAGMA journal_mode=WAL;
+.print Creating finalized database file...
 VACUUM INTO 'DB\sponsorblock.db3';
+.open DB\sponsorblock.db3
+PRAGMA journal_mode=WAL;
 .quit

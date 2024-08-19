@@ -38,7 +38,19 @@ function Get-Version{
 # Download CSV files with the given version number
 function Sync-CSV{
 	param($Version)
-	.\tools\rsync\rsync.exe -ztvhP --inplace rsync://rsync.sponsor.ajay.app:31111/sponsorblock/*_$Version.csv ./Temp/CSV
+	.\Tools\rsync\rsync.exe -ztvhP --inplace rsync://rsync.sponsor.ajay.app:31111/sponsorblock/*_$Version.csv ./Temp/CSV
+}
+
+# Delete old csv files
+function Delete-Old{
+	param($CurrentVersion)
+	$End = "_$CurrentVersion.csv"
+	Foreach($item in Get-Item .\Temp\CSV\*.csv){
+		If(!$item.Name.EndsWith($End,[System.StringComparison]::InvariantCultureIgnoreCase)){
+			Write-Output "Removing old version: ${item.Name}"
+			Remove-Item -Force $item
+		}
+	}
 }
 
 # Create the SQLite command script
@@ -47,7 +59,7 @@ function Create-Script{
 	if($JournalInRam){
 		$Script = $Script.Replace("=WAL;","=MEMORY;")
 	}
-	Foreach($item in Get-Item .\Temp\CSV\*){
+	Foreach($item in Get-Item .\Temp\CSV\*.csv){
 		$name = $item.Name
 		$table = $name -Split '_' | Select-Object -Index 0
 		$Script += Write-Output ".print Importing $name..."
@@ -73,7 +85,7 @@ function Create-Database{
 	$tmp2 = $env:TMP
 	$env:TEMP = "$PSScriptRoot\Temp"
 	$env:TMP = "$PSScriptRoot\Temp"
-	Write-Output $Script | Tools\sqlite3.exe
+	Write-Output $Script | .\Tools\sqlite3.exe
 	$env:TEMP = $tmp1
 	$env:TMP = $tmp2
 	If(Test-Path .\DB\sponsorblock.db3 -PathType Leaf) {
@@ -83,10 +95,21 @@ function Create-Database{
 	}
 }
 
-# Ensures that required folders exist
+# Ensures that the conditions to run the script are met
 function Init{
-	If(!(Test-Path .\Temp -PathType Container))     { New-Item -ItemType Directory .\Temp;     }
-	If(!(Test-Path .\Temp\CSV -PathType Container)) { New-Item -ItemType Directory .\Temp\CSV; }
+	If(!(Test-Path .\Temp -PathType Container))     { New-Item -ItemType Directory .\Temp | Out-Null;     }
+	If(!(Test-Path .\Temp\CSV -PathType Container)) { New-Item -ItemType Directory .\Temp\CSV | Out-Null; }
+	If(!$DumpScript){
+		If(!(Test-Path .\Tools\sqlite3.exe -PathType Leaf)) {
+			Throw "sqlite executable not found. Please redownload this project"
+		}
+		If(!(Test-Path .\Tools\rsync\rsync.exe -PathType Leaf)) {
+			Throw "rsync executable not found. Please redownload this project"
+		}
+		If(Test-Path .\DB\sponsorblock.db3 -PathType Leaf) {
+			Throw "sponsorblock.db3 already exists in DB folder. Delete or move it to create a new database"
+		}
+	}
 }
 
 # Deletes temporary directory
@@ -98,16 +121,20 @@ function Cleanup{
 
 Push-Location $PSScriptRoot
 
-Init
-If(!$NoDownload){
+If($NoDownload){
+	Init
+} Else {
+	Cleanup
+	Init
 	$Version = Get-Version
+	Delete-Old $Version
 	Sync-CSV $Version
 }
 $Script = Create-Script
 if($DumpScript){
 	Write-Output $Script
 } Else {
-Create-Database $Script
+	Create-Database $Script
 }
 # Do not clean up if we did not create CSV files
 If(!$NoDownload){
